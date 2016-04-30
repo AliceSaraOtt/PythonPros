@@ -1,0 +1,24 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
+        "http://www.w3.org/TR/html4/loose.dtd">
+<html>
+<head>
+    <title>Title</title>
+</head>
+<body>
+<h3>标题：{{ article.title }}</h3>
+<p>内容：{{ article.content }}</p>
+<hr>
+评论：<br>
+{% for comment in comments %}
+    <p>{{ comment }}</p>
+{% endfor %}
+<hr>
+<form action="/art_comment/" method="post">
+    <textarea name="content" rows="" cols=""></textarea>
+    <input type="hidden" name="art_id" value="{{ article.id }}">
+    <input type="submit">
+    <input type="hidden" name="csrfmiddlewaretoken" value="{{ c.csrf_token }}">
+</form>
+<a href="/list">博客列表</a>
+</body>
+</html>

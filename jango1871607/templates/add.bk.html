@@ -1,0 +1,15 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
+        "http://www.w3.org/TR/html4/loose.dtd">
+<html>
+<head>
+    <title>博客发布</title>
+</head>
+<body>
+<form action="{% url 'add' %}?action={{ action }}&aid={{ art.id }}" method="post">
+    <p>标题：<input type="text" name="title" value="{{ art.title }}"></p>
+    <p>内容：<textarea rows="10" cols="30" name="content">{{ art.content }}</textarea></p>
+    <input type="submit">
+    <input type="hidden" name="csrfmiddlewaretoken" value="{{ csrf_token }}">
+</form>
+</body>
+</html>

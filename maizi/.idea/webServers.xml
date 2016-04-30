@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="WebServers">
+    <option name="servers">
+      <webServer id="ac753ef8-223d-4d35-8af9-e7d791d3eb28" name="192.168.13.1 (project level)" url="http://192.168.13.1/cs/bootstrap/BarCode.aspx">
+        <fileTransfer host="192.168.13.1" port="21" username="sunsasi">
+          <advancedOptions>
+            <advancedOptions dataProtectionLevel="Private" />
+          </advancedOptions>
+        </fileTransfer>
+      </webServer>
+    </option>
+  </component>
+</project>

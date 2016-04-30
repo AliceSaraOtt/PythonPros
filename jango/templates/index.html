@@ -1,0 +1,34 @@
+{% extends 'base.html' %}
+{% block content %}
+    <a href="{% url 'dachui' 1 2 %}">dachui</a>
+    {% for k,v in get.items %}
+        {{ v }}
+    {% endfor %}
+    <hr>
+    {% for v in nums %}
+        第 {{ forloop.counter }}次循环
+        {% if forloop.last %}
+            {{ v }}
+        {% else %}
+            {{ v }}-
+        {% endif %}
+        <br>
+    {% endfor %}
+
+    {% for v in QQ %}
+        {{ v }}
+    {% empty %}
+        没有qq
+    {% endfor %}
+    <hr>
+    {% if score >= 90 %}
+        excilant
+    {% elif score >= 80 %}
+        good
+    {% else %}
+        poor baster
+    {% endif %}
+    <hr>
+    {{ request.path }}
+    <hr>
+{% endblock %}

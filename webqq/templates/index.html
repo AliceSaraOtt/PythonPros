@@ -1,0 +1,276 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
+        "http://www.w3.org/TR/html4/loose.dtd">
+<html>
+<head>
+    <title>Title</title>
+    <link rel="stylesheet" href="/static/bootstrap/css/bootstrap.min.css">
+    <script type="text/javascript" src="/static/bootstrap/js/jquery-2.2.2.min.js"></script>
+    <script type="text/javascript" src="/static/bootstrap/js/bootstrap.min.js"></script>
+    <style type="text/css">
+        .chat-box {
+            height: 500px;
+        }
+        .contact-list {
+            height: 100%;
+            padding-top: 20px;
+            border: 1px solid purple;
+        }
+
+        .dialog-box {
+            height: 100%;
+            border: 1px solid red;
+        }
+
+        .dialog-box-head {
+            height: 10%;
+            background-color: pink;
+        }
+
+        .dialog-box-middle {
+            height: 65%;
+            background-color: #fcf8e3;
+            overflow: auto;
+        }
+
+        .dialog-box-bottom {
+            width: 100%;
+            height: 25%;
+            background-color: paleturquoise;
+        }
+
+        .dialog-box-bottom textarea {
+            width: 100%;
+            height: 100%;
+            resize: none;
+        }
+    </style>
+</head>
+<body>
+<div>
+    <!-- Nav tabs -->
+    <ul class="nav nav-tabs" role="tablist">
+        <li role="presentation" class="active"><a href="#contact" aria-controls="contact" role="tab" data-toggle="tab">联系人</a>
+        </li>
+        <li role="presentation"><a href="#contact" aria-controls="group" role="tab" data-toggle="tab">群</a></li>
+        <li role="presentation"><a href="#messages" aria-controls="messages" role="tab" data-toggle="tab">其它</a></li>
+    </ul>
+    <!-- Tab panes -->
+    <div class="tab-content">
+        <div role="tabpanel" class="tab-pane active" id="contact">
+            <div class="chat-box">
+                <div class="contact-list col-md-2">
+                    <div class="list-group">
+                        {% for contact in request.user.userprofile.friend.select_related %}
+                            <a href="#" class="list-group-item" contact-id="{{ contact.id }}"
+                               contact-type="single">
+                                <span style="background-color: orangered" class="badge hide">0</span>
+                                <span>{{ contact }}</span>
+                            </a>
+                        {% endfor %}
+                    </div>
+                    <div class="list-group" style="display: none">
+                        {% for group in groups %}
+                            <a href="#" class="list-group-item" contact-id="{{ group.id }}" contact-type="group">
+                                <span style="background-color: orangered" class="badge hide">0</span>
+                                <span>{{ group }}</span>
+                            </a>
+                        {% endfor %}
+                    </div>
+                </div>
+                <div class="dialog-box col-md-9">
+                    <div class="dialog-box-head">
+                        <span contact-id="0" contact-type="single">xx</span>
+                    </div>
+                    <div class="dialog-box-middle">
+
+                    </div>
+                    <div class="dialog-box-bottom">
+                        <textarea></textarea>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div role="tabpanel" class="tab-pane" id="profile">群</div>
+        <div role="tabpanel" class="tab-pane" id="messages">其它</div>
+    </div>
+
+</div>
+<script type="text/javascript">
+    whole_session = {
+        'single': {},
+        'group': {}
+    };
+    $(document).ready(function () {
+        //联系人点击
+        $('.list-group a').click(function () {
+            $('.list-group a').removeClass('active')
+            $(this).addClass('active')
+
+            //清楚聊天数字并隐藏标签
+            var badge = $(this).children()[0];
+            $(badge).text(0).addClass('hide');
+
+            selectChat(this)
+        });
+        //文本框回车
+        $('textarea').keydown(function (e) {
+            if (e.which == 13 || e.which == 108) {
+                var t = $('textarea');
+                var msg = t.val();
+                t.val('');
+                if ($.trim(msg).length > 0) {
+                    //前台聊天窗口追加消息
+                    msg_html = makeMsg(msg, "{{ request.user.userprofile.name }}", new Date().toLocaleTimeString(), 'right');
+                    middle = $('.dialog-box-middle');
+                    middle.append(msg_html);
+                    middle.animate({scrollTop: $('.dialog-box-middle')[0].scrollHeight}, 10);
+                    //向后台发送消息
+                    sendMsg(msg)
+                }
+            }
+        });
+        //群组切换
+        $('a[aria-controls="group"]').click(function(){
+            $($('.list-group')[0]).css('display','none')
+            $($('.list-group')[1]).css('display','block')
+        })
+        $('a[aria-controls="contact"]').click(function(){
+            $($('.list-group')[1]).css('display','none')
+            $($('.list-group')[0]).css('display','block')
+        })
+        //3秒一次获取消息
+        setInterval(function () {
+            getMsg()
+        }, 2000)
+    });
+    //选择聊天对象
+    function selectChat(who) {
+        var contact_id = $(who).attr('contact-id');
+        var contact_type = $(who).attr('contact-type');
+        var contact_name = $($(who).children()[1]).text();
+        chat_html = "<span contact-id='" + contact_id + "' contact-type='" + contact_type + "'>" + contact_name + "</span>";
+        //切换会话
+        var present_id = $('.dialog-box-head span').attr('contact-id');
+        var present_type = $('.dialog-box-head span').attr('contact-type');
+
+        sessionSwap(present_id, present_type, 'save'); //保存当前会话内容
+        var dialog_html = sessionSwap(contact_id, contact_type, 'get'); // 读取目标联系人的会话内容
+
+        $('.dialog-box-middle').html(dialog_html);
+        //刷新聊天对象
+        $('.dialog-box-head').html(chat_html)
+    }
+    //生成聊天信息html
+    function makeMsg(msg, name, time, lr) {
+        var msg_html = "<div align=" + lr + ">" +
+                "<span>-" + name + "</span>" +
+                "<span>" + time + "</span>" +
+                "<p>" + msg + "</p>" + "</div>";
+        return msg_html
+    }
+    //发送消息到后台
+    function sendMsg(msg) {
+        var head = $('.dialog-box-head span');
+        //组建消息
+        msg_dict = {
+            'from_id': {{ request.user.userprofile.id }},
+            'to_id': head.attr('contact-id'),
+            'contact_type': head.attr('contact-type'),
+            'msg': msg
+        };
+        token = $("input[name='csrfmiddlewaretoken']").val();
+        $.post('{% url 'sendMsg' %}', {
+            'data': JSON.stringify(msg_dict),
+            'csrfmiddlewaretoken': token
+        }, function (callback) {
+            if (callback != 'ok') {
+                alert('服务器忙，发送失败，稍后再试')
+            }
+        })
+    }
+    //获取新消息
+    function getMsg() {
+        $.get({% url 'getMsg' %}, {'uid': {{ request.user.userprofile.id }}}, function (callback) {
+            console.log(callback)
+            var msg_dict = JSON.parse(callback);
+            var head = $('.dialog-box-head span');
+            var current_id = head.attr('contact-id');
+            var current_type = head.attr('contact-type');
+            var current_name = head.text();
+            $.each(msg_dict, function (index, msg) {
+                if (msg.contact_type == 'group'){
+                    current_name = msg.from_name
+                }
+                if (current_id == msg.from_id && current_type == msg.contact_type) {    // 当前聊天用户发来了消息
+                    msg_html = makeMsg(msg.msg, current_name, msg.time, 'left');
+                    $('.dialog-box-middle').append(msg_html)
+                }
+                else { // 累计消息数字
+                    var contact = $('.contact-list a[contact-id="' + msg.from_id + '"][contact-type="' + msg.contact_type + '"] span');
+                    var badge = contact[0];
+                    var contact_name = $(contact[1]).text();
+                    $(badge).text(parseInt($(badge).text()) + 1).removeClass('hide');
+                    if (msg.contact_type == 'group'){
+                        contact_name = msg.from_name
+                    }
+                    //追加文本到相应聊天对象
+                    dialog_html = sessionSwap(msg.from_id, msg.contact_type, 'get');
+                    msg_html = makeMsg(msg.msg, contact_name, msg.time, 'left');
+                    whole_session[msg.contact_type][msg.from_id] = dialog_html + msg_html
+                }
+            });
+            $('.dialog-box-middle').animate({scrollTop: $('.dialog-box-middle')[0].scrollHeight}, 10);
+            //getMsg()
+        })
+    }
+    //切换会话函数
+    function sessionSwap(id, type, action) {
+        var dialog_html = $('.dialog-box-middle').html();
+        if (action == 'save') {
+            whole_session[type][id] = dialog_html
+        }
+        else if (action == 'get') {
+            if (whole_session[type].hasOwnProperty(id)) {
+                dialog_html = whole_session[type][id]
+            }
+            else {
+                dialog_html = ''
+            }
+            return dialog_html
+        }
+    }
+    function WebSocketTest()
+    {
+      if ("WebSocket" in window)
+      {
+         alert("WebSocket is supported by your Browser!");
+         // Let us open a web socket
+         var ws = new WebSocket("ws://localhost:8000/qq/test/");
+         ws.onopen = function()
+         {
+            // Web Socket is connected, send data using send()
+            ws.send("Message to send");
+            alert("Message is sent...");
+         };
+         ws.onmessage = function (evt)
+         {
+            var received_msg = evt.data;
+            alert("Message is received...");
+            alert(received_msg)
+         };
+         ws.onclose = function()
+         {
+            // websocket is closed.
+            alert("Connection is closed...");
+         };
+      }
+      else
+      {
+         // The browser doesn't support WebSocket
+         alert("WebSocket NOT supported by your Browser!");
+      }
+    }
+</script>
+{% csrf_token %}
+</body>
+</html>

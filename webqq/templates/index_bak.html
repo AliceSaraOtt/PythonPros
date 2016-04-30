@@ -1,0 +1,188 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
+        "http://www.w3.org/TR/html4/loose.dtd">
+<html>
+<head>
+    <title>Title</title>
+    <link rel="stylesheet" href="/static/bootstrap/css/bootstrap.min.css">
+    <script type="text/javascript" src="/static/bootstrap/js/jquery-2.2.2.min.js"></script>
+    <script type="text/javascript" src="/static/bootstrap/js/bootstrap.min.js"></script>
+    <style type="text/css">
+        .chat-box {
+            height: 500px;
+        }
+        .contact-list {
+            height: 100%;
+            padding-top: 20px;
+            border: 1px solid purple;
+        }
+        .dialog-box {
+            height: 100%;
+            border: 1px solid red;
+        }
+
+        .dialog-box-head {
+            height: 10%;
+            background-color: pink;
+        }
+
+        .dialog-box-middle {
+            height: 65%;
+            background-color: #fcf8e3;
+            overflow: auto;
+        }
+
+        .dialog-box-bottom {
+            width: 100%;
+            height: 25%;
+            background-color: paleturquoise;
+        }
+
+        .dialog-box-bottom textarea {
+            width: 100%;
+            height: 100%;
+            resize: none;
+        }
+    </style>
+</head>
+<body>
+<div>
+
+    <!-- Nav tabs -->
+    <ul class="nav nav-tabs" role="tablist">
+        <li role="presentation" class="active"><a href="#home" aria-controls="home" role="tab" data-toggle="tab">联系人</a>
+        </li>
+        <li role="presentation"><a href="#profile" aria-controls="profile" role="tab" data-toggle="tab">群</a></li>
+        <li role="presentation"><a href="#messages" aria-controls="messages" role="tab" data-toggle="tab">其它</a></li>
+    </ul>
+    <!-- Tab panes -->
+    <div class="tab-content">
+        <div role="tabpanel" class="tab-pane active" id="home">
+            <div class="chat-box">
+                <div class="contact-list col-md-2">
+                    <div class="list-group">
+                        {% for contact in request.user.userprofile.friend.select_related %}
+                            <a href="#" class="list-group-item" contact-id="{{ contact.id }}"
+                               contact-type="single">{{ contact }}</a>
+                        {% endfor %}
+                    </div>
+                </div>
+                <div class="dialog-box col-md-9">
+                    <div class="dialog-box-head"></div>
+                    <div class="dialog-box-middle">
+
+                    </div>
+                    <div class="dialog-box-bottom">
+                        <textarea></textarea>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div role="tabpanel" class="tab-pane" id="profile">群</div>
+        <div role="tabpanel" class="tab-pane" id="messages">其它</div>
+    </div>
+
+</div>
+<script type="text/javascript">
+    whole_session = {
+        'single' : {},
+        'group' : {}
+    }
+    $(document).ready(function () {
+        $('.list-group a').click(function () {
+            $(this).addClass('active').siblings().removeClass('active');
+            selectChat(this)
+        });
+        // 回车事件
+        $('textarea').keydown(function (e) {
+            if (e.which == 13) {
+                msg = $('textarea').val();
+                $('textarea').val('');
+                if ($.trim(msg).length > 0) {
+                    msg_html = makeMsg(msg, "{{ request.user.userprofile.name }}" ,new Date().toLocaleTimeString(),'right'); // 生成一条聊天信息
+                    $('.dialog-box-middle').append(msg_html); //追加一条聊天信息
+                    $('.dialog-box-middle').animate({scrollTop: $('.dialog-box-middle')[0].scrollHeight}, 500);
+                    sendMsg(msg); //发送到后台
+                }
+            }
+        })
+        //获取消息
+        refresh = setInterval(function(){
+            getMsg();
+        },3000);
+    });
+    //选择聊天对象
+    function selectChat(who) {
+        var contact_id = $(who).attr('contact-id');
+        var contact_name = $(who).text();
+        var contact_type = $(who).attr('contact-type');
+        chat_html = "<span contact-id='" + contact_id + "' contact-type='" + contact_type + "'>" + contact_name + "</span>";
+        $('.dialog-box-head').html(chat_html)
+    }
+    //前端聊天内容添加
+    function makeMsg(msg, name, time, lr) {
+        var msg_html = "<div align=" + lr + ">" +
+                "<span>" + name + "</span>" +
+                "<span>" + time + "</span>" +
+                "<p>" + msg + "</p>" + "</div>"
+        return msg_html
+    }
+    //发送聊天消息到后台
+    function sendMsg(msg) {
+        head = $('.dialog-box-head span')
+        var msg_dict = {
+            'from_id': '{{ request.user.userprofile.id }}',
+            'to_id': head.attr('contact-id'),
+            'contact_type' : head.attr('contact-type'),
+            'msg' : msg
+        };
+        //三个参数：发到哪，发什么，回调函数
+        var token = $("input[name='csrfmiddlewaretoken']").val()
+        $.post("{% url 'sendMsg' %}",{'data':JSON.stringify(msg_dict),'csrfmiddlewaretoken':token},function(callback){
+            if (callback != 'ok'){
+                alert('服务器繁忙，稍后再试')
+            }
+        })
+    }
+    //获取新消息
+    function getMsg(){
+        $.get({% url 'getMsg' %},{'uid':"{{ request.user.userprofile.id }}"},function(callback){
+            var msg_dict = JSON.parse(callback)
+            console.log(msg_dict)
+            var current_id = $('.dialog-box-head span').attr('contact-id')
+            var current_type = $('.dialog-box-head span').attr('contact-type')
+            var current_name = $('.dialog-box-head span').text()
+            $.each(msg_dict,function(index,msg){
+                console.log(msg.from_id)
+                // 追加文本到当前对话框
+                if (msg.from_id == current_id && msg.contact_type == current_type){
+                    msg_html = makeMsg(msg.msg,current_name,msg.time,'left')
+                    $('.dialog-box-middle').append(msg_html)
+                }
+                else{ //增加消息数字
+                    msg_count_ele = $('.contact-list a[contact-id="'+ msg.from_id +'"][contact-type="'+ msg.contact_type +'"] span')
+                    $(msg_count_ele).removeClass('hide')
+                    $(msg_count_ele).text(parseInt($(msg_count_ele).text()) + 1)
+                }
+            })
+        })
+    }
+
+    function sessionSwap(id,type,action){
+        var dialog_html = $('.dialog-box-middle').html()
+        if(action == 'save'){
+            whole_session[type][id] = dialog_html
+        }
+        else if (action == 'get'){
+            if (whole_session[type].hasOwnProperty(id)){
+                dialog_html = whole_session[type][id]
+            }
+            else{
+                dialog_html = ''
+            }
+            return dialog_html
+        }
+    }
+</script>
+{% csrf_token %}
+</body>
+</html>

@@ -1,0 +1,263 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
+        "http://www.w3.org/TR/html4/loose.dtd">
+<html>
+<head>
+    <title>Title</title>
+    <link href="/static/bootstrap/css/bootstrap.min.css" rel="stylesheet">
+    <script src="/static/bootstrap/js/jquery-2.2.2.min.js"></script>
+    <script src="/static/bootstrap/js/bootstrap.min.js"></script>
+    <style type="text/css">
+        body {
+
+        }
+        .chat-box {
+            height: 500px;
+        }
+        .contact-list {
+            height: 100%;
+            border: 1px solid crimson;
+            padding: 20px 20px 0 20px;
+        }
+
+        .contact-list-search {
+            margin-bottom: 20px;
+        }
+
+        .contact-list-search input {
+            margin: 0 auto 0 auto;
+            display: block;
+        }
+
+        .dialog-box {
+            height: 100%;
+            border: 1px solid pink;
+        }
+
+        .dialog-box-head {
+            height: 10%;
+            background-color: #f2dede;
+        }
+
+        .dialog-box-middle {
+            height: 70%;
+            background-color: #d0e9c6;
+            overflow: auto;
+        }
+
+        .dialog-box-bottom {
+            width: 100%;
+            height: 20%;
+        }
+
+        .dialog-box-bottom textarea {
+            width: 100%;
+            height: 100%;
+            resize: none;
+        }
+    </style>
+</head>
+
+<body>
+
+<div>
+    <!-- Nav tabs -->
+    <ul class="nav nav-tabs" role="tablist">
+        <li role="presentation" class="active"><a href="#contact-box" aria-controls="single" role="tab" data-toggle="tab">联系人</a>
+        </li>
+        <li role="presentation"><a href="#contact-box" aria-controls="group" role="tab" data-toggle="tab">群组</a>
+        </li>
+        <li role="presentation"><a href="#config" aria-controls="messages" role="tab" data-toggle="tab">设置</a></li>
+    </ul>
+    <!-- Tab panes -->
+    <div class="tab-content">
+        <div role="tabpanel" class="tab-pane active" id="contact-box">
+            <div class="row chat-box">
+                <div class="contact-list col-md-2">
+                    <div class="contact-list-search">
+                        <input type="text">
+                    </div>
+                    <div class="list-group" id="list-group">
+                        {% for contact in request.user.userprofile.friends.select_related %}
+                            <a href="#" class="list-group-item" contact-id="{{ contact.id }}" contact-type="single">
+                                <span style="background-color: #ffA500" class="badge hide">0</span>
+                                <span>{{ contact.name }}</span>
+                            </a>
+                        {% endfor %}
+                    </div>
+                    <div class="list-group" id="list-group" style="display: none">
+                        {% for group in groups %}
+                            <a href="#" class="list-group-item" contact-id="{{ group.id }}" contact-type="group">
+                                <span style="background-color: #ffA500" class="badge hide">0</span>
+                                <span>{{ group}}</span>
+                            </a>
+                        {% endfor %}
+                    </div>
+                </div>
+                <div class="dialog-box col-md-9">
+                    <div class="dialog-box-head">
+                        <span contact-id="0" contact-type="single">xx</span>
+                    </div>
+                    <div class="dialog-box-middle"></div>
+                    <div class="dialog-box-bottom">
+                        <textarea rows="" cols="" id="chatbox"></textarea>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div role="tabpanel" class="tab-pane" id="contact-group-box">群组</div>
+        <div role="tabpanel" class="tab-pane" id="config">设置</div>
+    </div>
+</div>
+<script type="text/javascript">
+    whole_session = {
+        'single': {},
+        'group' : {}
+    }
+    $(document).ready(function () {
+        $('#list-group a').click(function () {       //标签切换
+            $('.list-group a').removeClass('active')
+            $(this).addClass('active');
+
+            //清除消息数字并隐藏
+            var msg_count_ele = $(this).children()[0];
+            $(msg_count_ele).addClass('hide');
+            $(msg_count_ele).text(0)
+
+            switchChat(this)
+        });
+
+        //切换群组
+        $('a[aria-controls="group"]').click(function(){
+            $($('.list-group')[0]).css('display','none')
+            $($('.list-group')[1]).css('display','block')
+        })
+        $('a[aria-controls="single"]').click(function(){
+            $($('.list-group')[1]).css('display','none')
+            $($('.list-group')[0]).css('display','block')
+        })
+        //请求消息
+{#        RefreshMsg = setInterval(function () {#}
+{#            GetNewMsg();#}
+{#        }, 3000);#}
+        GetNewMsg() //递归请求
+
+    });
+
+    //绑定回车事件
+    $('body').delegate('textarea', 'keydown', function (e) {
+        if (e.which == 13) {
+            t = $('textarea');
+            var msg = t.val();
+            if ($.trim(msg).length > 0) {  // 如果有内容
+                sendMsg(msg);
+                //console.log(msg)
+            }
+            t.val('');
+            addMsg(msg); //前台消息添加
+        }
+    });
+    //选择和谁聊天
+    function switchChat(who) {
+        var contact_id = $(who).attr('contact-id');
+        var contact_type = $(who).attr('contact-type');
+        var contact_name = $($(who).children('span')[1]).text();
+        var head_html = "正在和<span contact-id='" + contact_id + "' contact-type='" + contact_type + "'>" + contact_name + "</span>私聊中";
+        //保存当前会话内容，加载新的会话内容
+        var present_html = $('.dialog-box-middle').html()
+        var present_id = $('.dialog-box-head span').attr('contact-id')
+        var present_type = $('.dialog-box-head span').attr('contact-type')
+
+        // 切换会话
+        sessionSwap(present_id,present_type,'save')
+        var dialog_html = sessionSwap(contact_id,contact_type,'get')
+        $('.dialog-box-middle').html(dialog_html)
+        $('.dialog-box-head').html(head_html)
+    }
+    //添加聊天内容到聊天框
+    function addMsg(msg) {
+        var content = "<div align='right'>" +
+                "<span>" + "{{ request.user.userprofile.name }}：" + "</span>" +
+                "<span>" + new Date().toLocaleTimeString() + "</span>" +
+                "<p>" + msg + "</p>" +
+                "</div>";
+        dbox = $('.dialog-box-middle');
+        dbox.append(content);
+        dbox.animate({
+                    scrollTop: $('.dialog-box-middle')[0].scrollHeight
+                }, 1
+        )
+    }
+    //向后台发消息
+    function sendMsg(msg) {
+        head = $('.dialog-box-head span');
+        var msg_dic = {  //组建消息
+            'from_id': "{{ request.user.userprofile.id }}",
+            'to_id': head.attr('contact-id'),
+            'contact_type': head.attr('contact-type'),
+            'msg': msg
+        };
+        $.post("{% url 'sendMsg' %}", {
+            'data': JSON.stringify(msg_dic),
+            'csrfmiddlewaretoken': $("input[name='csrfmiddlewaretoken']").val()
+        }, function (callback) {
+            //console.log(callback)
+        })
+    }
+    //从后台获取消息
+    function GetNewMsg() {
+        $.get("{% url 'getMsg' %}", {'uid': "{{ request.user.userprofile.id }}"}, function(callback){
+            console.log(callback)
+            callback = JSON.parse(callback);
+            var current_to_id = $('.dialog-box-head span').attr('contact-id');
+            var current_to_type = $('.dialog-box-head span').attr('contact-type');
+            //var current_name = $('.dialog-box-head span').text();
+            $.each(callback, function(index,msg){
+                var msg_sender_ele = $('.contact-list a[contact-id="'+ msg.from_id +'"][contact-type="'+ msg.contact_type +'"] span')[1];
+                var current_name = $(msg_sender_ele).text()
+                if (msg.contact_type == 'group'){
+                    current_name = msg.from_name
+                }
+                var msg_html = "<div" +
+                                "<span>" + current_name + "</span>" +
+                                "<span>" + msg.date + "</span>" +
+                                "<p>" + msg.msg + "</p>" + "</div>";
+                if (msg.from_id == current_to_id && msg.contact_type == current_to_type){ //消息是属于当前聊天的人，直接加载消息
+                    $(".dialog-box-middle").append(msg_html)
+                }
+                else{ //累计消息数字
+                    var msg_count_ele = $('.contact-list a[contact-id="'+ msg.from_id +'"][contact-type="'+ msg.contact_type +'"] span')[0];
+                    $(msg_count_ele).removeClass('hide');
+                    $(msg_count_ele).text(parseInt($(msg_count_ele).text()) + 1)
+                    //追加文本到相应会话
+                    var dialog_html = sessionSwap(msg.from_id,msg.contact_type,'get')
+                    whole_session[msg.contact_type][msg.from_id] = dialog_html + msg_html
+                }
+                //添加动画
+                $('.dialog-box-middle').animate({
+                    scrollTop: $('.dialog-box-middle')[0].scrollHeight}, 1
+                )
+            })
+            GetNewMsg()
+        })
+    }
+    //切换聊天
+    function sessionSwap(id,type,action,html){
+        var dialog_html = $('.dialog-box-middle').html()
+        if (action == 'save'){
+            whole_session[type][id] = dialog_html
+            //console.log(whole_session[type][id])
+        }
+        else if (action == 'get'){
+            if (whole_session[type].hasOwnProperty(id)){
+                dialog_html = whole_session[type][id]
+            }
+            else{
+                dialog_html = ''
+            }
+            return dialog_html
+        }
+    }
+</script>
+{% csrf_token %}
+</body>
+</html>

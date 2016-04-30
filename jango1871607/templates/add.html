@@ -1,0 +1,23 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
+        "http://www.w3.org/TR/html4/loose.dtd">
+<html>
+<head>
+    <title>博客发布</title>
+</head>
+<body>
+<form action="{% url 'add' %}" method="post">
+    <p>标题：<input type="text" name="title" value=""></p>
+    <p>内容：<textarea rows="10" cols="30" name="content"></textarea></p>
+    <select name="cid">
+        {% for cat in cats %}
+            <option value="{{ cat.id }}">{{ cat.name }}</option>
+        {% empty %}
+            <option value="0">其它</option>
+        {% endfor %}
+    </select>
+    <input type="submit">
+    <input type="hidden" name="csrfmiddlewaretoken" value="{{ csrf_token }}">
+</form>
+<a href="/accounts/logout/">注销</a>
+</body>
+</html>

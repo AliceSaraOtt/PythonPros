@@ -1,0 +1,16 @@
+{% extends 'base.html' %}
+
+{% block content %}
+    <h1 style="text-align: center;color: red">{{ art.title }}</h1>
+    <hr>
+    <p style="padding:20px; line-height: 36px; font-size: 16px">&nbsp;&nbsp;&nbsp;&nbsp;{{ art.content }}</p>
+    {% for comt in comments %}
+        <p style="line-height: 26px">{{ comt }}</p><hr>
+    {% endfor %}
+    <form action="/topic/{{ art.id }}/" method="post">
+        <textarea name="comment"></textarea>
+        {% csrf_token %}
+        <input type="submit" value="评论">
+    </form>
+{% endblock %}
+

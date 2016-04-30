@@ -1,0 +1,19 @@
+{% extends 'base.html' %}
+{% block content %}
+<h1 style="text-align: center;color: red;">标题：{{ article.title }}</h1>
+<p style="font-size: 16px;line-height: 20px">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;{{ article.content }}</p>
+<hr>
+评论：<br>
+{% for comment in comments %}
+    <p>{{ comment }}</p>
+{% endfor %}
+<hr>
+<form action="/art_comment/" method="post">
+    <textarea name="content" rows="" cols=""></textarea>
+    <input type="hidden" name="art_id" value="{{ article.id }}">
+    <input type="submit">
+    <input type="hidden" name="csrfmiddlewaretoken" value="{{ c.csrf_token }}">
+</form>
+{% endblock %}
+
+

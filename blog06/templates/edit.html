@@ -1,0 +1,24 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
+        "http://www.w3.org/TR/html4/loose.dtd">
+<html>
+<head>
+    <title>编辑</title>
+</head>
+<body>
+    <form action="/edit_{{ art.id }}/" method="post">
+        <p>标题：<input name="title" type="text" value="{{ art.title }}"></p>
+        <p>内容：<textarea name="content" rows="" cols="">{{ art.content }}</textarea></p>
+        <select name="cat_id">
+            {% for cat in cats %}
+                {% ifequal cat.id art.cat_id %}
+                    <option value="{{ cat.id }}" selected="selected">{{ cat.name }}</option>
+                {% else %}
+                    <option value="{{ cat.id }}">{{ cat.name }}</option>
+                {% endifequal %}
+            {% endfor %}
+        </select>
+        <input type="hidden" name="csrfmiddlewaretoken" value="{{ c.csrf_token }}">
+        <input type="submit">
+    </form>
+</body>
+</html>

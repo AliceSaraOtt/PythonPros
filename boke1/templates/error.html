@@ -1,0 +1,22 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
+        "http://www.w3.org/TR/html4/loose.dtd">
+<html>
+<head>
+    <title>Title</title>
+</head>
+<body>
+出错啦：{{ e }} <label id="num"></label>秒后返回
+<script type="text/JavaScript">
+    var secs = 5; //倒计时的秒数
+    for(var i=secs;i>=0;i--)
+    {
+        window.setTimeout("Update(" + i + ")", (secs-i) * 1000);
+    }
+    function Update(num)
+    {
+        document.getElementById("num").innerHTML = num ;
+        if (num == 0){window.location='/add'}
+    }
+</script>
+</body>
+</html>

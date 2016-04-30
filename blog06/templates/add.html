@@ -1,0 +1,20 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
+        "http://www.w3.org/TR/html4/loose.dtd">
+<html>
+<head>
+    <title>Title</title>
+</head>
+<body>
+    <form action="/add/" method="post">
+        <p>标题：<input name="title" type="text"></p>
+        <p>内容：<textarea name="content" rows="" cols=""></textarea></p>
+        <select name="cat_id">
+            {% for cat in cats %}
+                <option value="{{ cat.id }}">{{ cat.name }}</option>
+            {% endfor %}
+        </select>
+        <input type="submit">
+        <input type="hidden" name="csrfmiddlewaretoken" value="{{ c.csrf_token }}">
+    </form>
+</body>
+</html>

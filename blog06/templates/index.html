@@ -1,0 +1,20 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
+        "http://www.w3.org/TR/html4/loose.dtd">
+<html>
+<head>
+    <title>首页</title>
+</head>
+<body>
+<a href="/add"> 发博文 </a> <hr>
+{% if user %}
+    <a href="/art_list_{{ user.id }}_0"> 我的博客</a>
+{% endif %}
+
+<a href="/accounts/login/?index.html">登陆</a>
+<a href="/accounts/logout/">退出</a>
+<hr>
+{% for article in articles %}
+    <a href="/topic_{{ article.id }}/" >{{ article.title }}</a>
+{% endfor %}
+</body>
+</html>
