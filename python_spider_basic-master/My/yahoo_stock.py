@@ -9,10 +9,10 @@ class Stock():
     def get_all(self):
         print self.stock_list
         for sid in self.stock_list:
-            url = 'http://table.finance.yahoo.com/table.csv?s=' + sid
+            # url = 'http://table.finance.yahoo.com/table.csv?s=' + sid
+            url = 'http://real-chart.finance.yahoo.com/table.csv?s=' + sid
             fname = sid
-            res = urllib.urlretrieve(url, 'd:/' + sid + '.csv')
-
+            res = urllib.urlretrieve(url, sid)
 
 if __name__ == '__main__':
     stock_list = ['000001.ss', '300287.sz']

@@ -11,7 +11,6 @@ class DoubanClient(object):
         self.session = requests.session()
         self.session.headers.update(headers)
 
-
     def login(self, username, password,
               source='index_nav',
               redir='http://www.douban.com/',
